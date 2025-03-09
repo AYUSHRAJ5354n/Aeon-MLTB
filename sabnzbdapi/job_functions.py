@@ -159,7 +159,7 @@ nzo_ids: Union[str, List[str], None] = None,
         """return {"status": True, "nzo_ids": ["all effected ids"]}"""
         return await self.call({"mode": "queue", "name": "resume", "value": nzo_id})
 
-    async def delete_job(self, nzo_id: Union[str, List[str]],, delete_files: bool = False):
+    async def delete_job(self, nzo_id: Union[str, List[str]], delete_files: bool = False):
         """return {"status": True, "nzo_ids": ["all effected ids"]}"""
         return await self.call(
             {

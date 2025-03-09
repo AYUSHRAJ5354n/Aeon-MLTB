@@ -1,5 +1,5 @@
 from sabnzbdapi.bound_methods import SubFunctions
-
+from typing import Union, List
 
 class JobFunctions(SubFunctions):
     async def add_uri(
@@ -9,7 +9,7 @@ class JobFunctions(SubFunctions):
         nzbname: str = "",
         password: str = "",
         cat: str = "*",
-        script: list | None = None,
+        script: Union[list, None] = None,
         priority: int = 0,
         pp: int = 1,
     ):
@@ -37,13 +37,13 @@ class JobFunctions(SubFunctions):
 
     async def get_downloads(
         self,
-        start: int | None = None,
-        limit: int | None = None,
-        search: str | None = None,
-        category: str | list[str] | None = None,
-        priority: int | list[str] | None = None,
-        status: str | list[str] | None = None,
-        nzo_ids: str | list[str] | None = None,
+        start: Union[int, None] = None,
+limit: Union[int, None] = None,
+search: Union[str, None] = None,
+category: Union[str, List[str], None] = None,
+priority: Union[int, List[str], None] = None,
+status: Union[str, List[str], None] = None,
+nzo_ids: Union[str, List[str], None] = None,
     ):
         """return {
             "queue": {
@@ -159,7 +159,7 @@ class JobFunctions(SubFunctions):
         """return {"status": True, "nzo_ids": ["all effected ids"]}"""
         return await self.call({"mode": "queue", "name": "resume", "value": nzo_id})
 
-    async def delete_job(self, nzo_id: str | list[str], delete_files: bool = False):
+    async def delete_job(self, nzo_id: Union[str, List[str]],, delete_files: bool = False):
         """return {"status": True, "nzo_ids": ["all effected ids"]}"""
         return await self.call(
             {
@@ -207,7 +207,7 @@ class JobFunctions(SubFunctions):
         """
         return await self.call({"mode": "get_files", "value": nzo_id})
 
-    async def remove_file(self, nzo_id: str, file_ids: str | list[str]):
+    async def remove_file(self, nzo_id: str, file_ids: Union[str, List[str]],):
         return await self.call(
             {
                 "mode": "queue",
@@ -221,15 +221,14 @@ class JobFunctions(SubFunctions):
 
     async def get_history(
         self,
-        start: int | None = None,
-        limit: int | None = None,
-        search: str | None = None,
-        category: str | list[str] | None = None,
-        archive: int | None = None,
-        status: str | list[str] | None = None,
-        nzo_ids: str | list[str] | None = None,
-        failed_only: bool = False,
-        last_history_update: int | None = None,
+        start: Union[int, None] = None,
+limit: Union[int, None] = None,
+search: Union[str, None] = None,
+category: Union[str, List[str], None] = None,
+archive: Union[int, None] = None,
+status: Union[str, List[str], None] = None,
+nzo_ids: Union[str, List[str], None] = None,
+last_history_update: Union[int, None] = None,
     ):
         """{
             "history": {
@@ -405,7 +404,7 @@ class JobFunctions(SubFunctions):
 
     async def delete_history(
         self,
-        nzo_ids: str | list[str],
+        nzo_ids: Union[str, List[str]],
         archive: int = 0,
         delete_files: bool = False,
     ):
@@ -426,7 +425,7 @@ class JobFunctions(SubFunctions):
             {"mode": "change_opts", "value": nzo_id, "value2": pp},
         )
 
-    async def set_speedlimit(self, limit: str | int):
+    async def set_speedlimit(self, limit: Union[str, int],):
         """return {"status": True}"""
         return await self.call(
             {"mode": "config", "name": "speedlimit", "value": limit},
@@ -438,14 +437,14 @@ class JobFunctions(SubFunctions):
             {"mode": "del_config", "section": section, "keyword": keyword},
         )
 
-    async def set_config_default(self, keyword: str | list[str]):
+    async def set_config_default(self, keyword: Union[str, List[str]],):
         """return {"status": True}"""
         return await self.call({"mode": "set_config_default", "keyword": keyword})
 
     async def get_config(
         self,
-        section: str | None = None,
-        keyword: str | None = None,
+        section: Union[str, None] = None,
+        keyword: Union[str, None] = None,
     ):
         """return config as dic"""
         return await self.call(

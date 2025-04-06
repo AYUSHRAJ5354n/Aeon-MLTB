@@ -134,7 +134,7 @@ class TaskListener(TaskConfig):
                                     f"Moving files from {self.mid} to {des_id}",
                                 )
                                 for item in await listdir(spath):
-                                    if item.strip().endswith(".aria2", ".!qB"):
+                                    if item.strip().endswith((".aria2", ".!qB")):
                                         continue
                                     item_path = (
                                         f"{self.dir}{self.folder_name}/{item}"

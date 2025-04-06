@@ -844,7 +844,8 @@ class TaskConfig:
             if not new_name:
                 return dl_path
             new_path = ospath.join(up_dir, new_name)
-            await move(dl_path, new_path)
+            with contextlib.suppress(Exception):
+                await move(dl_path, new_path)
             return new_path
         for dirpath, _, files in await sync_to_async(walk, dl_path, topdown=False):
             for file_ in files:
@@ -852,7 +853,8 @@ class TaskConfig:
                 new_name = perform_substitution(file_, self.name_sub)
                 if not new_name:
                     continue
-                await move(f_path, ospath.join(dirpath, new_name))
+                with contextlib.suppress(Exception):
+                    await move(f_path, ospath.join(dirpath, new_name))
         return dl_path
 
     async def remove_www_prefix(self, dl_path):
@@ -870,7 +872,8 @@ class TaskConfig:
             if new_name == name:
                 return dl_path
             new_path = ospath.join(up_dir, new_name)
-            await move(dl_path, new_path)
+            with contextlib.suppress(Exception):
+                await move(dl_path, new_path)
             return new_path
 
         for dirpath, _, files in await sync_to_async(walk, dl_path, topdown=False):
@@ -879,7 +882,8 @@ class TaskConfig:
                 new_name = clean_filename(file_)
                 if new_name == file_:
                     continue
-                await move(f_path, ospath.join(dirpath, new_name))
+                with contextlib.suppress(Exception):
+                    await move(f_path, ospath.join(dirpath, new_name))
 
         return dl_path
 

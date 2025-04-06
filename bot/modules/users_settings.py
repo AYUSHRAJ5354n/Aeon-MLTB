@@ -560,7 +560,7 @@ async def edit_user_settings(client, query):
                 fpath = token_pickle
             if await aiopath.exists(fpath):
                 await remove(fpath)
-            del user_dict[data[3]]
+            user_dict.pop(data[3], None)
             await database.update_user_doc(user_id, data[3])
         else:
             update_user_ldata(user_id, data[3], "")
@@ -568,7 +568,7 @@ async def edit_user_settings(client, query):
     elif data[2] == "reset":
         await query.answer("Reseted!", show_alert=True)
         if data[3] in user_dict:
-            del user_dict[data[3]]
+            user_dict.pop(data[3], None)
         else:
             for k in list(user_dict.keys()):
                 if k not in [

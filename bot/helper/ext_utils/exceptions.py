@@ -1,4 +1,3 @@
-# ruff: noqa: N818
 class DirectDownloadLinkException(Exception):
     """No method found for extracting direct download link from the HTTP link."""
 

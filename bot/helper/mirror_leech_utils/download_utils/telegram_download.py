@@ -62,14 +62,12 @@ class TelegramDownloadHelper:
 
     async def _on_download_error(self, error):
         async with global_lock:
-            if self._id in GLOBAL_GID:
-                GLOBAL_GID.remove(self._id)
+            GLOBAL_GID.discard(self._id)
         await self._listener.on_download_error(error)
 
     async def _on_download_complete(self):
         async with global_lock:
-            if self._id in GLOBAL_GID:
-                GLOBAL_GID.remove(self._id)
+            GLOBAL_GID.discard(self._id)
         await self._listener.on_download_complete()
 
     async def _download(self, message, path):
@@ -153,8 +151,7 @@ class TelegramDownloadHelper:
                     await event.wait()
                     if self._listener.is_cancelled:
                         async with global_lock:
-                            if self._id in GLOBAL_GID:
-                                GLOBAL_GID.remove(self._id)
+                            GLOBAL_GID.discard(self._id)
                         return
 
                 self._start_time = time()

@@ -408,6 +408,16 @@ Format: {key: value, key: value, key: value}.
 Example: {"format": "bv*+mergeall[vcodec=none]", "nocheckcertificate": True, "playliststart": 10, "fragment_retries": float("inf"), "matchtitle": "S13", "writesubtitles": True, "live_from_start": True, "postprocessor_args": {"ffmpeg": ["-threads", "4"]}, "wait_for_video": (5, 100), "download_ranges": [{"start_time": 0, "end_time": 10}]}
 Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L184'>FILE</a> or use this <a href='https://t.me/mltb_official_channel/177'>script</a> to convert cli arguments to api options.""",
     "FFMPEG_CMDS": """Read this guide. http://telegra.ph/Ffmpeg-guide-01-10""",
+    "YT_DEFAULT_PRIVACY": "Set your default YouTube upload privacy (public, private, unlisted). Timeout: 60 sec",
+    "YT_DEFAULT_CATEGORY": "Set your default YouTube video category ID (e.g., 22 for People & Blogs). Timeout: 60 sec",
+    "YT_DEFAULT_TAGS": "Set your default YouTube tags, separated by commas. Timeout: 60 sec",
+    "YT_DEFAULT_DESCRIPTION": "Set your default YouTube video description. Timeout: 60 sec",
+    "YT_DEFAULT_FOLDER_MODE": """Choose how folders (containing multiple videos) are uploaded to YouTube by default:
+- <b>Playlist</b>: Uploads the entire folder as a single new YouTube playlist.
+- <b>Individual Videos</b>: Uploads each video from the folder as an individual YouTube video, without creating a playlist.
+- <b>Playlist & Individuals</b>: Uploads the folder as a new playlist AND also makes each video available individually.
+Timeout: 60 sec""",
+    "YT_ADD_TO_PLAYLIST_ID": "Enter the YouTube Playlist ID you want your videos to be added to. If set, newly uploaded videos will be added to this playlist. Leave empty or set to 'None' to not automatically add to a specific playlist (unless creating a new one for a folder upload without this setting). Timeout: 60 sec",
 }
 
 help_string = f"""

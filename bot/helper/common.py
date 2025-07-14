@@ -138,6 +138,13 @@ class TaskConfig:
         self.files_to_proceed = []
         self.is_super_chat = self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"]
 
+        self.yt_privacy = None
+        self.yt_mode = "playlist"
+        self.yt_tags = None
+        self.yt_category = None
+        self.yt_description = None
+        self.yt_playlist_id = None
+
     def get_token_path(self, dest):
         if dest.startswith("mtp:"):
             return f"tokens/{self.user_id}.pickle"
@@ -293,6 +300,7 @@ class TaskConfig:
             default_upload = (
                 self.user_dict.get("DEFAULT_UPLOAD", "") or Config.DEFAULT_UPLOAD
             )
+
             if (not self.up_dest and default_upload == "rc") or self.up_dest == "rc":
                 self.up_dest = (
                     self.user_dict.get("RCLONE_PATH") or Config.RCLONE_PATH
@@ -307,6 +315,7 @@ class TaskConfig:
                 self.up_dest and self.up_dest.startswith("yt:")
             ):
                 chosen_service = "yt"
+                self.resolve_youtube_settings()
             else:
                 chosen_service = default_upload
 
@@ -360,6 +369,7 @@ class TaskConfig:
                 )
                 if not is_gdrive_id(self.up_dest):
                     raise ValueError(self.up_dest)
+
             elif self.is_clone:
                 if is_gdrive_link(self.link) and self.get_token_path(
                     self.link,
@@ -508,6 +518,78 @@ class TaskConfig:
                 self.thumb = (
                     await create_thumb(msg) if msg.photo or msg.document else ""
                 )
+
+    def resolve_youtube_settings(self):
+        def get_cleaned_value(value, default, allowed=None, to_lower=False):
+            val = value if value is not None else self.user_dict.get(default)
+            if val:
+                val = val.strip()
+                if to_lower:
+                    val = val.lower()
+                if not allowed or val in allowed:
+                    return val
+            return None
+
+        self.yt_privacy = (
+            get_cleaned_value(
+                self.yt_privacy,
+                "YT_DEFAULT_PRIVACY",
+                allowed=["private", "public", "unlisted"],
+                to_lower=True,
+            )
+            or self.yt_privacy
+        )
+        if not self.yt_privacy:
+            self.yt_privacy = "unlisted"
+
+        self.yt_mode = (
+            get_cleaned_value(
+                self.yt_mode,
+                "YT_DEFAULT_FOLDER_MODE",
+                allowed=["playlist", "individual", "playlist_and_individual"],
+            )
+            or self.yt_mode
+        )
+        if not self.yt_mode:
+            self.yt_mode = "playlist"
+
+        tags_str = (
+            self.yt_tags
+            if self.yt_tags is not None
+            else self.user_dict.get("YT_DEFAULT_TAGS")
+        )
+        if tags_str is not None:
+            tags_str = tags_str.strip()
+            if tags_str.lower() == "none":
+                self.yt_tags = []
+            else:
+                self.yt_tags = [t.strip() for t in tags_str.split(",") if t.strip()]
+
+        self.yt_category = (
+            get_cleaned_value(self.yt_category, "YT_DEFAULT_CATEGORY", allowed=None)
+            if (
+                get_cleaned_value(
+                    self.yt_category,
+                    "YT_DEFAULT_CATEGORY",
+                    allowed=None,
+                    to_lower=False,
+                )
+                or ""
+            ).isdigit()
+            else self.yt_category
+        )
+
+        description = (
+            self.yt_description
+            if self.yt_description is not None
+            else self.user_dict.get("YT_DEFAULT_DESCRIPTION")
+        )
+        self.yt_description = (
+            description.strip() if description is not None else self.yt_description
+        )
+
+        if self.yt_playlist_id and self.yt_playlist_id.strip():
+            self.yt_playlist_id = self.yt_playlist_id.strip()
 
     async def get_tag(self, text: list):
         if len(text) > 1 and text[1].startswith("Tag: "):

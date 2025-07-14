@@ -16,7 +16,7 @@ class DbManager:
 
     def __init__(self):
         """Initializes the DbManager, setting initial connection state."""
-        self._return = True  # Flag to indicate if DB operations should be skipped
+        self._return = True
         self._conn = None
         self.db = None
 
@@ -29,7 +29,7 @@ class DbManager:
                 Config.DATABASE_URL,
                 server_api=ServerApi("1"),
             )
-            self.db = self._conn.luna  # 'luna' is the database name
+            self.db = self._conn.luna
             self._return = False
             LOGGER.info("Successfully connected to the database.")
         except PyMongoError as e:

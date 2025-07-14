@@ -221,9 +221,9 @@ async def edit_variable(_, message, pre_message, key):
             drives_ids.insert(0, value)
     elif key == "INDEX_URL":
         if drives_names and drives_names[0] == "Main":
-            index_urls[0] = value
+            index_urls[0] = value.strip("/")
         else:
-            index_urls.insert(0, value)
+            index_urls.insert(0, value.strip("/"))
     elif key == "AUTHORIZED_CHATS":
         aid = value.split()
         auth_chats.clear()
@@ -398,7 +398,7 @@ async def update_private_file(_, message, pre_message):
                     drives_ids.append(temp[1])
                     drives_names.append(temp[0].replace("_", " "))
                     if len(temp) > 2:
-                        index_urls.append(temp[2])
+                        index_urls.append(temp[2]).strip("/")
                     else:
                         index_urls.append("")
         elif file_name in [".netrc", "netrc"]:

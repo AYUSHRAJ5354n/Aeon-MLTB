@@ -13,13 +13,13 @@ from bot.helper.telegram_helper.message_utils import send_status_message
 
 async def add_direct_download(listener, path):
     details = listener.link
-    if not (contents := details.get("contents")):
+    if not (contents := details.contents):
         await listener.on_download_error("There is nothing to download!")
         return
-    listener.size = details["total_size"]
+    listener.size = details.total_size
 
     if not listener.name:
-        listener.name = details["title"]
+        listener.name = details.title
     path = f"{path}/{listener.name}"
 
     msg, button = await stop_duplicate_check(listener)
@@ -41,8 +41,9 @@ async def add_direct_download(listener, path):
             return
 
     a2c_opt = {"follow-torrent": "false", "follow-metalink": "false"}
-    if header := details.get("header"):
-        a2c_opt["header"] = header
+    if headers_dict := details.headers:
+        headers = [f"{k}: {v}" for k, v in headers_dict.items()]
+        a2c_opt["header"] = headers
     directListener = DirectListener(path, listener, a2c_opt)
 
     async with task_dict_lock:

@@ -30,7 +30,6 @@ from bot.core.torrent_manager import TorrentManager
 from .bot_utils import cmd_exec, sync_to_async
 from .exceptions import NotSupportedExtractionArchive
 
-# List of recognized archive file extensions
 ARCH_EXT = [
     ".tar.bz2",
     ".tar.gz",
@@ -98,12 +97,10 @@ ARCH_EXT = [
     ".crc64",
 ]
 
-# Regex to identify the first file of a split archive (e.g., .part01.rar, .7z.001)
 FIRST_SPLIT_REGEX = (
     r"\.part0*1\.rar$|\.7z\.0*1$|\.zip\.0*1$|^(?!.*\.part\d+\.rar$).*\.rar$"
 )
 
-# Regex to identify parts of a split archive (e.g., .r01, .7z.002, .part2.rar)
 SPLIT_REGEX = r"\.r\d+$|\.7z\.\d+$|\.z\d+$|\.zip\.\d+$|\.part\d+\.rar$"
 
 

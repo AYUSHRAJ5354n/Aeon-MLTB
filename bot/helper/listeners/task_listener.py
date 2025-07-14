@@ -350,7 +350,7 @@ class TaskListener(TaskConfig):
             )
 
         if self.is_leech:
-            LOGGER.info(f"Leeching: {self.name} (no specific uploader or is_leech)")
+            LOGGER.info(f"Leeching: {self.name}")
             tg = TelegramUploader(self, up_dir)
             async with task_dict_lock:
                 task_dict[self.mid] = TelegramStatus(self, tg, gid, "up")
@@ -361,8 +361,29 @@ class TaskListener(TaskConfig):
             await delete_message(tg.log_msg)
             del tg
         elif upload_service == "yt":
-            LOGGER.info(f"Uploading to YouTube: {self.name} (Service selected: yt)")
-            yt = YouTubeUpload(self, up_path)
+            LOGGER.info(f"Uploading to YouTube: {self.name}")
+
+            playlist_id_to_use = self.yt_playlist_id
+            if not playlist_id_to_use:
+                user_playlist_id = self.user_dict.get("YT_ADD_TO_PLAYLIST_ID")
+                if user_playlist_id and user_playlist_id.strip().lower() not in [
+                    "none",
+                    "",
+                ]:
+                    playlist_id_to_use = user_playlist_id.strip()
+                else:
+                    playlist_id_to_use = None
+
+            yt = YouTubeUpload(
+                self,
+                up_path,
+                privacy=self.yt_privacy,
+                tags=self.yt_tags,
+                category=self.yt_category,
+                description=self.yt_description,
+                playlist_id=playlist_id_to_use,
+                upload_mode=self.yt_mode,
+            )
             async with task_dict_lock:
                 task_dict[self.mid] = YtStatus(self, yt, gid)
             await gather(
@@ -371,9 +392,7 @@ class TaskListener(TaskConfig):
             )
             del yt
         elif is_gdrive_id(self.up_dest):
-            LOGGER.info(
-                f"Uploading to Google Drive (path-detected): {self.name} (Destination ID: {self.up_dest})"
-            )
+            LOGGER.info(f"Uploading to Google Drive: {self.name}")
             drive = GoogleDriveUpload(self, up_path)
             async with task_dict_lock:
                 task_dict[self.mid] = GoogleDriveStatus(self, drive, gid, "up")
@@ -383,7 +402,7 @@ class TaskListener(TaskConfig):
             )
             del drive
         else:
-            LOGGER.info("Uploading to Rclone")
+            LOGGER.info(f"Uploading to Rclone: {self.name}")
             RCTransfer = RcloneTransferHelper(self)
             async with task_dict_lock:
                 task_dict[self.mid] = RcloneStatus(self, RCTransfer, gid, "up")
@@ -399,6 +418,7 @@ class TaskListener(TaskConfig):
         files,
         folders,
         mime_type,
+        upload_result="",
         rclone_path="",
         dir_id="",
     ):
@@ -412,36 +432,16 @@ class TaskListener(TaskConfig):
         done_msg = f"{self.tag}\nYour task is complete\nPlease check your inbox."
         LOGGER.info(f"Task Done: {self.name}")
 
-        # Determine the upload service for message formatting
-        upload_service = ""
-        if self.raw_up_dest == "yt" or (
-            self.raw_up_dest and self.raw_up_dest.startswith("yt:")
-        ):
-            upload_service = "yt"
-        elif self.raw_up_dest == "gd":
-            upload_service = "gd"
-        elif self.raw_up_dest == "rc":
-            upload_service = "rc"
+        upload_service = (
+            "yt" if self.raw_up_dest and self.raw_up_dest.startswith("yt") else ""
+        )
 
-        if not upload_service:  # If -up didn't specify a service directly
+        if not upload_service:
             upload_service = self.user_dict.get(
                 "DEFAULT_UPLOAD", Config.DEFAULT_UPLOAD
             )
 
-        if upload_service == "yt":
-            msg += "\n<b>Type: </b>Video/Playlist"  # Updated to reflect it can be a playlist
-            if link:
-                msg += f"\n<b>Link: </b><a href='{link}'>Link</a>"  # Generic "Link" as it can be video or playlist
-            msg += f"\n\n<b>cc: </b>{self.tag}"
-
-            await send_message(self.user_id, msg)
-            if Config.LOG_CHAT_ID:
-                await send_message(int(Config.LOG_CHAT_ID), msg)
-            await send_message(
-                self.message,
-                f"{self.tag}\nYour video has been uploaded to YouTube successfully!",
-            )
-        elif self.is_leech:
+        if self.is_leech:
             msg += f"\n<b>Total Files: </b>{folders}"
             if mime_type != 0:
                 msg += f"\n<b>Corrupted Files: </b>{mime_type}"
@@ -475,6 +475,127 @@ class TaskListener(TaskConfig):
                             f"{msg}<blockquote expandable>{fmsg}</blockquote>",
                         )
                 await send_message(self.message, done_msg)
+        elif upload_service == "yt":
+            playlist_url = (
+                upload_result.get("playlist_url")
+                if isinstance(upload_result, dict)
+                else None
+            )
+            individual_video_urls = (
+                upload_result.get("individual_video_urls", [])
+                if isinstance(upload_result, dict)
+                else []
+            )
+            video_url = (
+                upload_result.get("video_url")
+                if isinstance(upload_result, dict)
+                else None
+            )
+
+            if playlist_url:
+                base_msg_content = f"<b>Name: </b><code>{escape(self.name)}</code>\n\n<b>Size: </b>{get_readable_file_size(self.size)}"
+                base_msg_content += (
+                    f"\n<b>Playlist Link: </b><a href='{playlist_url}'>Link</a>"
+                )
+
+                messages_to_send = []
+
+                current_message_part = base_msg_content
+                current_message_part += f"\n\n<b>Total Videos: </b>{folders}"
+                if folders == 1:
+                    current_message_part += "\n<b>Source: </b>Folder"
+                current_message_part += f"\n<b>cc: </b>{self.tag}"
+
+                if individual_video_urls:
+                    links_header = "\n\n<b>Individual Video Links:</b>"
+                    current_message_part += links_header
+                    for video_entry in individual_video_urls:
+                        link_line = f"\n- <a href='{video_entry['url']}'>{escape(video_entry['name'])}</a>"
+                        if (
+                            len(current_message_part.encode("utf-8"))
+                            + len(link_line.encode("utf-8"))
+                            > 3900
+                        ):
+                            messages_to_send.append(current_message_part)
+                            current_message_part = (
+                                "<b>Video Links (continued):</b>" + link_line
+                            )
+                        else:
+                            current_message_part += link_line
+
+                if current_message_part:
+                    messages_to_send.append(current_message_part)
+
+                for part in messages_to_send:
+                    await send_message(self.user_id, part)
+                    if Config.LOG_CHAT_ID:
+                        await send_message(int(Config.LOG_CHAT_ID), part)
+                    await sleep(1)
+
+            else:
+                base_msg_content = f"<b>Name: </b><code>{escape(self.name)}</code>\n\n<b>Size: </b>{get_readable_file_size(self.size)}"
+
+                messages_to_send = []
+                current_message_part = base_msg_content
+
+                if video_url:
+                    current_message_part += f"\n<b>Link: </b><a href='{video_url['url']}'>{escape(video_url['name'])}</a>"
+
+                current_message_part += f"\n\n<b>Total Videos: </b>{folders}"
+                if folders == 1:
+                    current_message_part += "\n<b>Source: </b>Folder"
+                current_message_part += f"\n<b>cc: </b>{self.tag}"
+
+                if individual_video_urls:
+                    links_header = "\n\n<b>Individual Video Links:</b>"
+                    if (
+                        len(current_message_part.encode("utf-8"))
+                        + len(links_header.encode("utf-8"))
+                        > 3900
+                        and video_url
+                    ) or (
+                        len(current_message_part.encode("utf-8"))
+                        + len(links_header.encode("utf-8"))
+                        > 3900
+                    ):
+                        messages_to_send.append(current_message_part)
+                        current_message_part = links_header
+                    else:
+                        current_message_part += links_header
+
+                    for video_entry in individual_video_urls:
+                        link_line = f"\n- <a href='{video_entry['url']}'>{escape(video_entry['name'])}</a>"
+                        if (
+                            len(current_message_part.encode("utf-8"))
+                            + len(link_line.encode("utf-8"))
+                            > 3900
+                        ):
+                            messages_to_send.append(current_message_part)
+                            current_message_part = (
+                                "<b>Video Links (continued):</b>" + link_line
+                            )
+                        else:
+                            current_message_part += link_line
+
+                if current_message_part:
+                    messages_to_send.append(current_message_part)
+
+                for part in messages_to_send:
+                    await send_message(self.user_id, part)
+                    if Config.LOG_CHAT_ID:
+                        await send_message(int(Config.LOG_CHAT_ID), part)
+                    await sleep(1)
+
+            if isinstance(upload_result, str):
+                error_message = f"<b>Name: </b><code>{escape(self.name)}</code>\n\n<b>Size: </b>{get_readable_file_size(self.size)}\n\n<b>YT Upload Error: </b>{escape(upload_result)}\n\n<b>cc: </b>{self.tag}"
+                await send_message(self.user_id, error_message)
+                if Config.LOG_CHAT_ID:
+                    await send_message(int(Config.LOG_CHAT_ID), error_message)
+
+            await send_message(
+                self.message,
+                f"{self.tag}\nYour YouTube upload is complete!",
+            )
         else:
             msg += f"\n\n<b>Type: </b>{mime_type}"
             if mime_type == "Folder":
@@ -485,7 +606,7 @@ class TaskListener(TaskConfig):
             ):
                 buttons = ButtonMaker()
                 if link:
-                    buttons.url_button("☁️ Cloud Link", link)
+                    buttons.url_button("Cloud Link", link)
                 else:
                     msg += f"\n\nPath: <code>{rclone_path}</code>"
                 if rclone_path and Config.RCLONE_SERVE_URL and not self.private_link:
@@ -494,7 +615,7 @@ class TaskListener(TaskConfig):
                     share_url = f"{Config.RCLONE_SERVE_URL}/{remote}/{url_path}"
                     if mime_type == "Folder":
                         share_url += "/"
-                    buttons.url_button("🔗 Rclone Link", share_url)
+                    buttons.url_button("Rclone Link", share_url)
                 if not rclone_path and dir_id:
                     INDEX_URL = ""
                     if self.private_link:
@@ -502,10 +623,12 @@ class TaskListener(TaskConfig):
                     elif Config.INDEX_URL:
                         INDEX_URL = Config.INDEX_URL
                     if INDEX_URL:
-                        share_url = f"{INDEX_URL}findpath?id={dir_id}"
-                        buttons.url_button("⚡ Index Link", share_url)
+                        share_url = f"{INDEX_URL}/findpath?id={dir_id}"
+                        buttons.url_button("Index Link", share_url)
                         if mime_type.startswith(("image", "video", "audio")):
-                            share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
+                            share_urls = (
+                                f"{INDEX_URL}/findpath?id={dir_id}&view=true"
+                            )
                             buttons.url_button("🌐 View Link", share_urls)
                 button = buttons.build_menu(2)
             else:

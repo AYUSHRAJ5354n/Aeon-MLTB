@@ -37,15 +37,15 @@ class DirectListener:
         for content in contents:
             if self.listener.is_cancelled:
                 break
-            if content["path"]:
-                self._a2c_opt["dir"] = f"{self._path}/{content['path']}"
+            if content.path:
+                self._a2c_opt["dir"] = f"{self._path}/{content.path}"
             else:
                 self._a2c_opt["dir"] = self._path
-            filename = content["filename"]
+            filename = content.filename
             self._a2c_opt["out"] = filename
             try:
                 gid = await TorrentManager.aria2.addUri(
-                    uris=[content["url"]],
+                    uris=[content.url],
                     options=self._a2c_opt,
                     position=0,
                 )

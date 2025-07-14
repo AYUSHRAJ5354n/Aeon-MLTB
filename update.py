@@ -64,7 +64,6 @@ stream_handler.setFormatter(formatter)
 
 basicConfig(handlers=[file_handler, stream_handler], level=INFO)
 
-# Attempt to load from config.py
 try:
     settings = import_module("config")
     config_file = {
@@ -77,7 +76,6 @@ except Exception:
     )
     config_file = {}
 
-# Fallback to environment variables if BOT_TOKEN is not set
 BOT_TOKEN = config_file.get("BOT_TOKEN") or os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     log_error("BOT_TOKEN variable is missing! Exiting now.")
@@ -85,7 +83,6 @@ if not BOT_TOKEN:
 
 BOT_ID = BOT_TOKEN.split(":", 1)[0]
 
-# Fallback to environment variables for DATABASE_URL
 DATABASE_URL = config_file.get("DATABASE_URL", "") or os.getenv("DATABASE_URL", "")
 
 if DATABASE_URL:

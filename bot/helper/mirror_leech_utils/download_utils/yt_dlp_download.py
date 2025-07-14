@@ -27,7 +27,6 @@ class MyLogger:
         self._listener = listener
 
     def debug(self, msg):
-        # Hack to fix changing extension
         if not self._obj.is_playlist and (
             match := re_search(
                 r".Merger..Merging formats into..(.*?).$",

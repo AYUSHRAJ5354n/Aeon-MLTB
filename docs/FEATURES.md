@@ -141,3 +141,19 @@
 - Automatically change media metadata based on configurations.
 - Automatically add watermark text to videos or images.
 - Customize caption format for uploaded files.
+
+## YouTube Settings
+
+You can configure default settings for your YouTube uploads. Access these via the main settings menu, then select "YouTube".
+
+*   **Default Privacy**: Set your default YouTube upload privacy.
+    *   Options: `unlisted`, `public`, `private`
+    *   Default: `unlisted`
+*   **Default Category**: Set your default YouTube video category ID.
+    *   Example: `22` (for People & Blogs)
+    *   Default: `22`
+*   **Default Tags**: Set your default YouTube tags, separated by commas.
+    *   Example: `tag1, my awesome tag, another tag`
+    *   Default: `None` (no tags added by default beyond potentially bot-specific ones)
+*   **Default Description**: Set your default YouTube video description. The original filename will often be appended.
+    *   Default: `Uploaded by Aeon-MLTB.`

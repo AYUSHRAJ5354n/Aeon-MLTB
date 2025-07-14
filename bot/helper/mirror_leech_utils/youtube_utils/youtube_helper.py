@@ -60,7 +60,6 @@ class YouTubeHelper:
                 self.proc_bytes += chunk_size
                 self.total_time += self.update_interval
             else:
-                # For YouTube uploads, we'll track progress differently
                 self.total_time += self.update_interval
 
     def authorize(self, user_id=""):
@@ -89,7 +88,7 @@ class YouTubeHelper:
             return parse_qs(parsed.query)["v"][0]
         if "youtu.be/" in url:
             return url.split("youtu.be/")[1].split("?")[0]
-        return url  # Assume it's already a video ID
+        return url
 
     @retry(
         wait=wait_exponential(multiplier=2, min=3, max=6),

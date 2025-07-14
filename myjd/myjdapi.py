@@ -1,7 +1,6 @@
-from functools import wraps
-from json import JSONDecodeError, dumps, loads
+from json import JSONDecodeError
 
-from httpx import AsyncClient, AsyncHTTPTransport, RequestError
+from httpx import AsyncClient, AsyncHTTPTransport, RequestError, Timeout
 
 from .exception import (
     MYJDApiException,
@@ -118,7 +117,7 @@ class Config:
                     "includeExtensions": True,
                     "pattern": "",
                     "values": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/query", params)
 
@@ -208,7 +207,7 @@ class Extension:
                     "name": True,
                     "pattern": "",
                     "installed": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/list", params=params)
 
@@ -223,8 +222,7 @@ class Extension:
 
     async def setEnabled(self, id, enabled):
         return await self.device.action(
-            f"{self.url}/setEnabled",
-            params=[id, enabled],
+            f"{self.url}/setEnabled", params=[id, enabled]
         )
 
 
@@ -310,17 +308,12 @@ class Linkgrabber:
                     "variantID": True,
                     "variants": True,
                     "priority": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/queryLinks", params)
 
     async def cleanup(
-        self,
-        action,
-        mode,
-        selection_type,
-        link_ids=None,
-        package_ids=None,
+        self, action, mode, selection_type, link_ids=None, package_ids=None
     ):
         """
         Clean packages and/or links of the linkgrabber list.
@@ -440,7 +433,7 @@ class Linkgrabber:
                     "downloadPassword": None,
                     "destinationFolder": None,
                     "overwritePackagizerRules": False,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/addLinks", params)
 
@@ -522,7 +515,7 @@ class Linkgrabber:
                     "saveTo": True,
                     "startAt": 0,
                     "status": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/queryPackages", params)
 
@@ -560,7 +553,7 @@ class Downloads:
                     "startAt": 0,
                     "status": True,
                     "url": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/queryLinks", params)
 
@@ -584,17 +577,12 @@ class Downloads:
                     "speed": True,
                     "startAt": 0,
                     "status": True,
-                },
+                }
             ]
         return await self.device.action(f"{self.url}/queryPackages", params)
 
     async def cleanup(
-        self,
-        action,
-        mode,
-        selection_type,
-        link_ids=None,
-        package_ids=None,
+        self, action, mode, selection_type, link_ids=None, package_ids=None
     ):
         """
         Clean packages and/or links of the linkgrabber list.
@@ -670,11 +658,7 @@ class Downloads:
         return await self.device.action(f"{self.url}/resetLinks", params)
 
     async def move_to_new_package(
-        self,
-        link_ids,
-        package_ids,
-        new_pkg_name,
-        download_path,
+        self, link_ids, package_ids, new_pkg_name, download_path
     ):
         params = [link_ids, package_ids, new_pkg_name, download_path]
         return await self.device.action(f"{self.url}/movetoNewPackage", params)
@@ -726,14 +710,6 @@ class Jddevice:
         return response["data"]
 
 
-class clientSession(AsyncClient):
-    @wraps(AsyncClient.request)
-    async def request(self, method: str, url: str, **kwargs):
-        kwargs.setdefault("timeout", 3)
-        kwargs.setdefault("follow_redirects", True)
-        return await super().request(method, url, **kwargs)
-
-
 class MyJdApi:
     def __init__(self):
         self.__api_url = "http://127.0.0.1:3128"
@@ -746,9 +722,14 @@ class MyJdApi:
 
         transport = AsyncHTTPTransport(retries=10, verify=False)
 
-        self._http_session = clientSession(transport=transport)
-
-        self._http_session.verify = False
+        self._http_session = AsyncClient(
+            base_url=self.__api_url,
+            transport=transport,
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            timeout=Timeout(connect=60, read=60, write=60, pool=None),
+            follow_redirects=True,
+            verify=False,
+        )
 
         return self._http_session
 
@@ -759,54 +740,41 @@ class MyJdApi:
 
     async def request_api(self, path, params=None):
         session = self._session()
-
-        # Prepare params_request based on the input params
         params_request = params if params is not None else []
-
-        # Construct the request payload
         params_request = {
             "params": params_request,
         }
-        data = dumps(params_request)
-        # Removing quotes around null elements.
-        data = data.replace('"null"', "null")
-        data = data.replace("'null'", "null")
-        request_url = self.__api_url + path
         try:
-            res = await session.request(
-                "POST",
-                request_url,
-                headers={"Content-Type": "application/json; charset=utf-8"},
-                content=data,
+            res = await session.post(
+                path,
+                json=params_request,
             )
-            response = res.text
         except RequestError:
             return None
+        try:
+            response = res.json()
+        except JSONDecodeError as exc:
+            raise MYJDDecodeException(
+                "Failed to decode response: {}", response
+            ) from exc
         if res.status_code != 200:
-            try:
-                error_msg = loads(response)
-            except JSONDecodeError as exc:
-                raise MYJDDecodeException(
-                    "Failed to decode response: {}",
-                    response,
-                ) from exc
             msg = (
                 "\n\tSOURCE: "
-                + error_msg["src"]
+                + response.get("src", "UNKNOWN_SOURCE")
                 + "\n\tTYPE: "
-                + error_msg["type"]
+                + response.get("type", "UNKNOWN_TYPE")
                 + "\n------\nREQUEST_URL: "
                 + self.__api_url
                 + path
             )
             msg += "\n"
-            if data is not None:
-                msg += "DATA:\n" + data
+            if params_request is not None:
+                msg += "DATA:\n" + params_request
             raise (
                 MYJDApiException.get_exception(
-                    error_msg["src"],
-                    error_msg["type"],
+                    response.get("src", "UNKNOWN_SOURCE"),
+                    response.get("type", "UNKNOWN_TYPE"),
                     msg,
                 )
             )
-        return loads(response)
+        return response

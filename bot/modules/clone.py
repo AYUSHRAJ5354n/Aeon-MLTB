@@ -12,18 +12,13 @@ from bot.helper.ext_utils.bot_utils import (
     cmd_exec,
     sync_to_async,
 )
-from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.links_utils import (
     is_gdrive_id,
     is_gdrive_link,
     is_rclone_path,
-    is_share_link,
 )
 from bot.helper.ext_utils.task_manager import stop_duplicate_check
 from bot.helper.listeners.task_listener import TaskListener
-from bot.helper.mirror_leech_utils.download_utils.direct_link_generator import (
-    direct_link_generator,
-)
 from bot.helper.mirror_leech_utils.gdrive_utils.clone import GoogleDriveClone
 from bot.helper.mirror_leech_utils.gdrive_utils.count import GoogleDriveCount
 from bot.helper.mirror_leech_utils.rclone_utils.transfer import RcloneTransferHelper
@@ -135,15 +130,6 @@ class Clone(TaskListener):
         return None
 
     async def _proceed_to_clone(self, sync):
-        if is_share_link(self.link):
-            try:
-                self.link = await sync_to_async(direct_link_generator, self.link)
-                LOGGER.info(f"Generated link: {self.link}")
-            except DirectDownloadLinkException as e:
-                LOGGER.error(str(e))
-                if str(e).startswith("ERROR:"):
-                    await send_message(self.message, str(e))
-                    return
         if is_gdrive_link(self.link) or is_gdrive_id(self.link):
             self.name, mime_type, self.size, files, _ = await sync_to_async(
                 GoogleDriveCount().count,
@@ -213,8 +199,6 @@ class Clone(TaskListener):
                     "--config",
                     config_path,
                     f"{remote}:{src_path}",
-                    "-v",
-                    "--log-systemd",
                 ]
                 res = await cmd_exec(cmd)
                 if res[2] != 0:
@@ -271,8 +255,6 @@ class Clone(TaskListener):
                 "--config",
                 config_path,
                 destination,
-                "-v",
-                "--log-systemd",
             ]
             cmd2 = [
                 "xone",
@@ -283,8 +265,6 @@ class Clone(TaskListener):
                 "--config",
                 config_path,
                 destination,
-                "-v",
-                "--log-systemd",
             ]
             cmd3 = [
                 "xone",
@@ -294,8 +274,6 @@ class Clone(TaskListener):
                 "--config",
                 config_path,
                 destination,
-                "-v",
-                "--log-systemd",
             ]
             res1, res2, res3 = await gather(
                 cmd_exec(cmd1),

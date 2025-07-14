@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402, PLC0415
 from asyncio import gather
 
 from pyrogram.types import BotCommand
@@ -45,7 +45,6 @@ COMMANDS = {
 }
 
 
-# Setup Commands
 COMMAND_OBJECTS = [
     BotCommand(
         getattr(BotCommands, cmd)[0]
@@ -57,13 +56,11 @@ COMMAND_OBJECTS = [
 ]
 
 
-# Set Bot Commands
 async def set_commands():
     if Config.SET_COMMANDS:
         await TgClient.bot.set_bot_commands(COMMAND_OBJECTS)
 
 
-# Main Function
 async def main():
     from .core.startup import (
         load_configurations,
@@ -120,6 +117,5 @@ create_help_buttons()
 add_handlers()
 
 
-# Run Bot
 LOGGER.info("Bot Started!")
 bot_loop.run_forever()

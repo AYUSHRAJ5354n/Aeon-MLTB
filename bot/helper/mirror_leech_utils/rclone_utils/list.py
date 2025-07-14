@@ -57,7 +57,6 @@ async def path_updates(_, query, obj):
         else:
             await obj.back_from_path()
     elif data[1] == "re":
-        # some remotes has space
         data = query.data.split(maxsplit=2)
         obj.remote = data[2]
         await obj.get_path()
@@ -286,8 +285,6 @@ class RcloneList:
             "--config",
             self.config_path,
             f"{self.remote}{self.path}",
-            "-v",
-            "--log-systemd",
         ]
         if self.listener.is_cancelled:
             return

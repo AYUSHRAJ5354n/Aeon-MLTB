@@ -215,10 +215,69 @@ Stop Duplicate is <b>{sd_msg}</b>"""
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
         text = f"<u>Upload Destination Settings for {name}</u>"
+    elif stype == "youtube":
+        buttons.data_button(
+            "Default Privacy",
+            f"userset {user_id} menu YT_DEFAULT_PRIVACY",
+        )
+        yt_privacy = user_dict.get("YT_DEFAULT_PRIVACY", "unlisted")
+
+        buttons.data_button(
+            "Default Category",
+            f"userset {user_id} menu YT_DEFAULT_CATEGORY",
+        )
+        yt_category = user_dict.get("YT_DEFAULT_CATEGORY", "22")
+
+        buttons.data_button(
+            "Default Tags",
+            f"userset {user_id} menu YT_DEFAULT_TAGS",
+        )
+        yt_tags = user_dict.get("YT_DEFAULT_TAGS", "None")
+
+        buttons.data_button(
+            "Default Description",
+            f"userset {user_id} menu YT_DEFAULT_DESCRIPTION",
+        )
+        yt_description = user_dict.get(
+            "YT_DEFAULT_DESCRIPTION", "Uploaded by Aeon-MLTB."
+        )
+
+        buttons.data_button(
+            "Upload Mode",
+            f"userset {user_id} menu YT_DEFAULT_FOLDER_MODE",
+        )
+        yt_folder_mode = user_dict.get("YT_DEFAULT_FOLDER_MODE", "playlist")
+
+        buttons.data_button(
+            "Add to Playlist ID",
+            f"userset {user_id} menu YT_ADD_TO_PLAYLIST_ID",
+        )
+        yt_add_to_playlist_id = user_dict.get("YT_ADD_TO_PLAYLIST_ID", "None")
+
+        buttons.data_button("Back", f"userset {user_id} back")
+        buttons.data_button("Close", f"userset {user_id} close")
+        text = f"""<u>YouTube Settings for {name}</u>
+Default Privacy: <code>{yt_privacy}</code>
+Default Category: <code>{yt_category}</code>
+Default Tags: <code>{yt_tags}</code>
+Default Description: <code>{yt_description}</code>
+Default Folder Upload Mode: <b>{yt_folder_mode.capitalize()}</b>
+Add to Playlist ID: <code>{yt_add_to_playlist_id}</code>"""
+    elif stype == "youtube_folder_mode_menu":
+        buttons.data_button(
+            "Playlist", f"userset {user_id} set_yt_folder_mode playlist"
+        )
+        buttons.data_button(
+            "Individual", f"userset {user_id} set_yt_folder_mode individual"
+        )
+        buttons.data_button("Back", f"userset {user_id} youtube")
+        buttons.data_button("Close", f"userset {user_id} close")
+        text = f"<u>Set Default YouTube Folder Upload Mode for {name}</u>"
     else:
         buttons.data_button("Leech", f"userset {user_id} leech")
         buttons.data_button("Rclone", f"userset {user_id} rclone")
         buttons.data_button("Gdrive API", f"userset {user_id} gdrive")
+        buttons.data_button("YouTube", f"userset {user_id} youtube")
 
         upload_paths = user_dict.get("UPLOAD_PATHS", {})
         if (
@@ -235,7 +294,7 @@ Stop Duplicate is <b>{sd_msg}</b>"""
         if user_dict.get("DEFAULT_UPLOAD", ""):
             default_upload = user_dict["DEFAULT_UPLOAD"]
         elif "DEFAULT_UPLOAD" not in user_dict:
-            default_upload = Config.DEFAULT_UPLOAD or "gd"  # Set Gdrive as default
+            default_upload = Config.DEFAULT_UPLOAD or "gd"
 
         if default_upload == "gd":
             du = "Gdrive API"
@@ -464,6 +523,14 @@ async def get_menu(option, message, user_id):
         back_to = "rclone"
     elif option in gdrive_options:
         back_to = "gdrive"
+    elif option in [
+        "YT_DEFAULT_PRIVACY",
+        "YT_DEFAULT_CATEGORY",
+        "YT_DEFAULT_TAGS",
+        "YT_DEFAULT_DESCRIPTION",
+        "YT_ADD_TO_PLAYLIST_ID",
+    ]:
+        back_to = "youtube"
     else:
         back_to = "back"
     buttons.data_button("Back", f"userset {user_id} {back_to}")
@@ -586,12 +653,21 @@ async def edit_user_settings(client, query):
         await query.answer("Not Yours!", show_alert=True)
     elif data[2] == "setevent":
         await query.answer()
-    elif data[2] in ["leech", "gdrive", "rclone"]:
+    elif data[2] in ["leech", "gdrive", "rclone", "youtube"]:
         await query.answer()
         await update_user_settings(query, data[2])
     elif data[2] == "menu":
         await query.answer()
-        await get_menu(data[3], message, user_id)
+        if data[3] == "YT_DEFAULT_FOLDER_MODE":
+            await update_user_settings(query, "youtube_folder_mode_menu")
+        else:
+            await get_menu(data[3], message, user_id)
+    elif data[2] == "set_yt_folder_mode":
+        await query.answer()
+        new_mode = data[3]
+        update_user_ldata(user_id, "YT_DEFAULT_FOLDER_MODE", new_mode)
+        await database.update_user_data(user_id)
+        await update_user_settings(query, "youtube")
     elif data[2] == "tog":
         await query.answer()
         update_user_ldata(user_id, data[3], data[4] == "t")
@@ -709,7 +785,7 @@ async def edit_user_settings(client, query):
     elif data[2] in [
         "gd",
         "rc",
-    ]:  # This block is now obsolete but kept for safety, can be removed later
+    ]:
         await query.answer()
         du = "rc" if data[2] == "gd" else "gd"
         update_user_ldata(user_id, "DEFAULT_UPLOAD", du)

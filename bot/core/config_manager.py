@@ -116,6 +116,8 @@ class Config:
                     f"{key} should be {expected_type.__name__}, got {type(value).__name__}"
                 )
 
+            if not value:
+                return expected_type()
             try:
                 evaluated = ast.literal_eval(value)
                 if isinstance(evaluated, expected_type):

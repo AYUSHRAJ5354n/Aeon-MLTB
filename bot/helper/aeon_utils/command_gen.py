@@ -68,8 +68,6 @@ async def get_watermark_cmd(file, key):
         file,
         "-vf",
         f"drawtext=text='{key}':fontfile={font_path}:fontsize=20:fontcolor=white:x=10:y=10",
-        # "-preset",
-        # "ultrafast",
         "-threads",
         f"{max(1, cpu_no // 2)}",
         temp_file,

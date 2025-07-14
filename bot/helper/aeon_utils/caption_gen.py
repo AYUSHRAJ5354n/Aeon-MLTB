@@ -41,7 +41,7 @@ async def generate_caption(filename, directory, caption_template):
         if result[1]:
             LOGGER.info(f"MediaInfo command output: {result[1]}")
 
-        mediainfo_data = json.loads(result[0])  # Parse JSON output
+        mediainfo_data = json.loads(result[0])
     except Exception as error:
         LOGGER.error(f"Failed to retrieve media info: {error}. File may not exist!")
         return filename

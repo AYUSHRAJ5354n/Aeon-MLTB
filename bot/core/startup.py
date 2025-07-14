@@ -273,7 +273,7 @@ async def update_variables():
                 drives_ids.append(temp[1])
                 drives_names.append(temp[0].replace("_", " "))
                 if len(temp) > 2:
-                    index_urls.append(temp[2])
+                    index_urls.append(temp[2].strip("/"))
                 else:
                     index_urls.append("")
 
@@ -307,6 +307,12 @@ async def load_configurations():
     starts the Gunicorn web server, extracts JDownloader config if present,
     loads shorteners, and sets up service accounts if accounts.zip exists.
     """
+
+    process = await create_subprocess_shell(
+        "uv pip install -U truelink",
+    )
+    await process.wait()
+
     if not await aiopath.exists(".netrc"):
         async with aiopen(".netrc", "w"):
             pass

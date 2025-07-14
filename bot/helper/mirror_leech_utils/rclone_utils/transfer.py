@@ -79,7 +79,7 @@ class RcloneTransferHelper:
                     self._speed,
                     self._eta,
                 ) = data[0]
-            await sleep(0.05)
+            await sleep(0.5)
 
     def _switch_service_account(self):
         if self._sa_index == self._sa_number - 1:
@@ -191,7 +191,7 @@ class RcloneTransferHelper:
                 (
                     "--drive-acknowledge-abuse",
                     "--drive-chunk-size",
-                    "128M",
+                    "64M",
                     "--tpslimit",
                     "1",
                     "--tpslimit-burst",
@@ -217,8 +217,6 @@ class RcloneTransferHelper:
             "--config",
             config_path,
             epath,
-            "-v",
-            "--log-systemd",
         ]
         res, err, code = await cmd_exec(cmd)
 
@@ -328,10 +326,6 @@ class RcloneTransferHelper:
         if remote_type == "drive" and not self._listener.rc_flags:
             cmd.extend(
                 (
-                    "--drive-chunk-size",
-                    "128M",
-                    "--drive-upload-cutoff",
-                    "128M",
                     "--tpslimit",
                     "1",
                     "--tpslimit-burst",
@@ -361,8 +355,6 @@ class RcloneTransferHelper:
                 "--config",
                 oconfig_path,
                 destination,
-                "-v",
-                "--log-systemd",
             ]
             res, err, code = await cmd_exec(cmd)
 
@@ -454,8 +446,6 @@ class RcloneTransferHelper:
                 "--config",
                 config_path,
                 destination,
-                "-v",
-                "--log-systemd",
             ]
             res, err, code = await cmd_exec(cmd)
 
@@ -504,8 +494,6 @@ class RcloneTransferHelper:
             "--low-level-retries",
             "1",
             "-M",
-            "-v",
-            "--log-systemd",
         ]
         if self._rclone_select:
             cmd.extend(("--files-from", self._listener.link))

@@ -7,7 +7,8 @@ aioaria2
 aioqbt
 cloudscraper
 dnspython
-electrogram
+ElectroCrypto
+kurigram
 fastapi
 feedparser
 google-api-python-client
@@ -21,12 +22,14 @@ lxml
 natsort
 pillow
 psutil
+pymongo
 pyshorteners
 python-magic
 pytz
 pytdbot[tdjson]
 requests
 speedtest-cli
+truelink
 telegraph
 tenacity
 uvicorn
